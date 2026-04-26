@@ -1,6 +1,6 @@
 # Benchmark Report
 
-Generated: `2026-04-26T15:12:30.771980+00:00`
+Generated: `2026-04-26T16:28:41.166642+00:00`
 
 Mode: `mock_pipeline`
 
@@ -14,12 +14,12 @@ Hardware:
 
 | Backend | Device | Input size | Mean latency | P50 latency | P95 latency | FPS | Model size MB |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| mock_detector_tracking_rules | cpu | 640 | 0.036 ms | 0.033 ms | 0.048 ms | 28011.21 | n/a |
+| mock_detector_tracking_rules | cpu | 640 | 0.034 ms | 0.036 ms | 0.057 ms | 29511.58 | n/a |
 
 Benchmark configuration:
 
-- Warmup runs: `3`
-- Benchmark runs: `10`
+- Warmup runs: `5`
+- Benchmark runs: `20`
 
 Real model benchmark command:
 

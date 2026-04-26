@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-04-26T15:39:27.307747+00:00",
+  "mode": "real_model",
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "python": "3.12.8"
+  },
+  "input_size": 640,
+  "warmup_runs": 2,
+  "benchmark_runs": 5,
+  "backends": [
+    {
+      "backend": "pytorch_ultralytics",
+      "device": "cpu",
+      "model_size_mb": 5.353702545166016,
+      "model": "yolo11n.pt",
+      "mean_latency_ms": 69.72797999624163,
+      "p50_latency_ms": 69.02459997218102,
+      "p95_latency_ms": 75.87780000176281,
+      "fps": 14.341445142307299
+    }
+  ]
+}

@@ -100,10 +100,9 @@ def run_benchmark(
     if model_path is None:
         raise FileNotFoundError("A real model path is required unless --mock is used.")
     model_path = Path(model_path)
-    if not model_path.exists():
-        raise FileNotFoundError(f"PyTorch model file not found: {model_path}")
+    model_size_mb = _file_size_mb(model_path) if model_path.exists() else None
 
-    detector = YOLODetector(model_path, device=device)
+    detector = YOLODetector(str(model_path), device=device)
     pytorch_metrics = benchmark_callable(
         lambda: detector.predict_frame(frame),
         warmup_runs=warmup_runs,
@@ -113,7 +112,8 @@ def run_benchmark(
         {
             "backend": "pytorch_ultralytics",
             "device": device,
-            "model_size_mb": _file_size_mb(model_path),
+            "model_size_mb": model_size_mb,
+            "model": str(model_path),
             **pytorch_metrics,
         }
     )
@@ -215,6 +215,10 @@ def _write_markdown_report(results: dict[str, Any], report_path: str | Path) -> 
         if results["mode"] == "mock_pipeline"
         else "This benchmark used a real model checkpoint."
     )
+    real_model = next(
+        (backend.get("model", "models/best.pt") for backend in results["backends"]),
+        "models/best.pt",
+    )
     content = f"""# Benchmark Report
 
 Generated: `{results["timestamp"]}`
@@ -241,7 +245,7 @@ Benchmark configuration:
 Real model benchmark command:
 
 ```bash
-python scripts/run_benchmark.py --model models/best.pt --image docs/assets/demo_input.jpg
+python scripts/run_benchmark.py --model {real_model} --image docs/assets/demo_input.jpg
 ```
 
 Mock pipeline benchmark command:
