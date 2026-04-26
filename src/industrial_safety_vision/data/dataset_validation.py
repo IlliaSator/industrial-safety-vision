@@ -41,7 +41,7 @@ def validate_yolo_dataset(
     }
 
     for split in SPLITS:
-        split_summary = _validate_split(dataset_root, split, class_count)
+        split_summary = _validate_split(dataset_root, split, class_count, config)
         summary["splits"][split] = split_summary
         summary["issues"].extend(split_summary["issues"])
 
@@ -51,9 +51,14 @@ def validate_yolo_dataset(
     return summary
 
 
-def _validate_split(dataset_root: Path, split: str, class_count: int) -> dict[str, Any]:
-    image_dir = dataset_root / "images" / split
-    label_dir = dataset_root / "labels" / split
+def _validate_split(
+    dataset_root: Path,
+    split: str,
+    class_count: int,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    image_dir = _resolve_image_dir(dataset_root, split, config)
+    label_dir = _resolve_label_dir(dataset_root, split, image_dir)
     issues: list[dict[str, str]] = []
     if not image_dir.exists():
         issues.append({"type": "missing_image_dir", "path": str(image_dir)})
@@ -92,9 +97,44 @@ def _validate_split(dataset_root: Path, split: str, class_count: int) -> dict[st
     return {
         "image_count": len(images),
         "label_count": label_count,
+        "image_dir": str(image_dir),
+        "label_dir": str(label_dir),
         "class_distribution": dict(class_distribution),
         "issues": issues,
     }
+
+
+def _resolve_image_dir(dataset_root: Path, split: str, config: dict[str, Any]) -> Path:
+    configured = config.get("val" if split == "val" else split)
+    if configured:
+        configured_path = Path(configured)
+        if not configured_path.is_absolute():
+            configured_path = dataset_root / configured_path
+        return configured_path
+
+    candidates = [
+        dataset_root / "images" / split,
+        dataset_root / split / "images",
+        dataset_root / ("valid" if split == "val" else split) / "images",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def _resolve_label_dir(dataset_root: Path, split: str, image_dir: Path) -> Path:
+    if image_dir.name == "images":
+        return image_dir.parent / "labels"
+    candidates = [
+        dataset_root / "labels" / split,
+        dataset_root / split / "labels",
+        dataset_root / ("valid" if split == "val" else split) / "labels",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def parse_args() -> argparse.Namespace:
