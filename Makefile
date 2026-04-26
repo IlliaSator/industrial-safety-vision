@@ -1,9 +1,16 @@
 PYTHON ?= python
 MOCK ?= true
+DATASET_YAML ?= data/raw/construction-safety-gsnvb/data.yaml
+MODEL ?= yolo11n.pt
+EVAL_MODEL ?= models/best.pt
+DEVICE ?= cpu
+EPOCHS ?= 1
+BATCH_SIZE ?= 2
+IMAGE_SIZE ?= 320
 
 export INDUSTRIAL_SAFETY_MOCK_DETECTOR ?= $(MOCK)
 
-.PHONY: install test lint format train evaluate validate-data generate-demo demo-image demo-video api docker-build docker-run export-onnx benchmark
+.PHONY: install test lint format download-data train evaluate validate-data generate-demo demo-image demo-video api docker-build docker-run export-onnx benchmark
 
 install:
 	$(PYTHON) -m pip install --upgrade pip
@@ -18,14 +25,17 @@ lint:
 format:
 	ruff check . --fix
 
+download-data:
+	$(PYTHON) scripts/download_ppe_dataset.py --output data/raw/construction-safety-gsnvb
+
 train:
-	$(PYTHON) -m industrial_safety_vision.training.train_yolo --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.training.train_yolo --config configs/train.yaml --dataset $(DATASET_YAML) --model $(MODEL) --epochs $(EPOCHS) --batch-size $(BATCH_SIZE) --image-size $(IMAGE_SIZE) --device $(DEVICE)
 
 evaluate:
-	$(PYTHON) -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml --dataset $(DATASET_YAML) --model $(EVAL_MODEL) --split val --device $(DEVICE)
 
 validate-data:
-	$(PYTHON) -m industrial_safety_vision.data.dataset_validation --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.data.dataset_validation --dataset-yaml $(DATASET_YAML) --report reports/dataset_summary.json
 
 generate-demo:
 	$(PYTHON) scripts/generate_demo_assets.py
