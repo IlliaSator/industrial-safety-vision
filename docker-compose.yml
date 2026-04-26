@@ -7,6 +7,7 @@ services:
     environment:
       MODEL_PATH: /app/models/best.pt
       DEVICE: cpu
+      INDUSTRIAL_SAFETY_MOCK_DETECTOR: "true"
     volumes:
       - ./models:/app/models
       - ./data:/app/data

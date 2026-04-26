@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 
-from industrial_safety_vision.inference.video_inference import run_video_inference
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +25,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    from industrial_safety_vision.inference.video_inference import run_video_inference
+
     args = parse_args()
     input_source: str | int = int(args.input) if str(args.input).isdigit() else args.input
     summary = run_video_inference(

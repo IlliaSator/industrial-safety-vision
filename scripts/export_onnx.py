@@ -3,6 +3,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
+
 
 def export_onnx(model_path: str | Path, output_path: str | Path, *, image_size: int = 640) -> Path:
     model_path = Path(model_path)

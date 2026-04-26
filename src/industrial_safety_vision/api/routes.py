@@ -22,7 +22,9 @@ from industrial_safety_vision.api.schemas import (
 from industrial_safety_vision.config.settings import settings
 from industrial_safety_vision.core import Detection
 from industrial_safety_vision.inference.detector import YOLODetector
+from industrial_safety_vision.inference.mock_detector import MockSafetyDetector
 from industrial_safety_vision.inference.video_inference import run_video_inference
+from industrial_safety_vision.utils.image_io import decode_image_bytes
 
 router = APIRouter()
 
@@ -31,7 +33,7 @@ class InferenceService:
     """Simple in-memory service state for demos and tests."""
 
     def __init__(self) -> None:
-        self._detector: YOLODetector | None = None
+        self._detector: YOLODetector | MockSafetyDetector | None = None
         self.processed_images = 0
         self.processed_videos = 0
         self.latencies_ms: list[float] = []
@@ -39,14 +41,17 @@ class InferenceService:
         self.alerts: list[dict[str, object]] = []
 
     @property
-    def detector(self) -> YOLODetector:
+    def detector(self) -> YOLODetector | MockSafetyDetector:
         if self._detector is None:
-            self._detector = YOLODetector(
-                settings.model_path,
-                confidence=settings.inference_confidence,
-                iou=settings.inference_iou,
-                device=settings.device,
-            )
+            if settings.mock_detector:
+                self._detector = MockSafetyDetector()
+            else:
+                self._detector = YOLODetector(
+                    settings.model_path,
+                    confidence=settings.inference_confidence,
+                    iou=settings.inference_iou,
+                    device=settings.device,
+                )
         return self._detector
 
     def model_info(self) -> dict[str, Any]:
@@ -141,14 +146,9 @@ def metrics(service: ServiceDep) -> dict[str, Any]:
 
 def _decode_image_bytes(content: bytes) -> np.ndarray:
     try:
-        import cv2
-    except ImportError as exc:  # pragma: no cover - environment-specific
-        msg = "OpenCV is required to decode uploaded images."
-        raise RuntimeError(msg) from exc
-    image = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR)
-    if image is None:
-        raise ValueError("Uploaded file is not a decodable image.")
-    return image
+        return decode_image_bytes(content)
+    except Exception as exc:
+        raise ValueError("Uploaded file is not a decodable image.") from exc
 
 
 def _average(values: list[float]) -> float:
