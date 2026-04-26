@@ -64,3 +64,11 @@ def test_predict_image_endpoint_with_mocked_service() -> None:
     body = response.json()
     assert body["detections"][0]["class_name"] == "person"
     assert body["latency_ms"] == 1.5
+
+
+def test_metrics_endpoint_with_mocked_service() -> None:
+    client = build_client()
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.json()["processed_images"] == 0
