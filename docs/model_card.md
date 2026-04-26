@@ -60,4 +60,4 @@ Track alert volume, per-camera false positive rate, detector confidence distribu
 
 ## Current Repository Status
 
-The committed assets demonstrate architecture and pipeline readiness. They do not claim trained PPE accuracy. The included benchmark example is a mock pipeline benchmark and should not be interpreted as neural-network performance.
+The committed assets demonstrate architecture and pipeline readiness. A one-epoch smoke training run on `LibreYOLO/construction-safety-gsnvb` validates that the training and evaluation pipeline executes, but it is not a production PPE model. The repository includes both mock-pipeline benchmark output and a real `yolo11n.pt` CPU benchmark.

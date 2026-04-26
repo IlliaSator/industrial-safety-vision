@@ -21,7 +21,7 @@ Full PPE safety mode requires a custom model trained on classes such as `person`
 | Image demo | Working in deterministic mock mode |
 | Synthetic video demo | Working in deterministic mock mode |
 | Real YOLO inference | Supported when a checkpoint/model name is provided |
-| Custom PPE training | Supported via YOLO-format dataset |
+| Custom PPE training | Smoke-tested on RF100 construction-safety dataset |
 | ONNX export | Supported when a model checkpoint exists |
 | Benchmarking | Working; mock pipeline benchmark included |
 | Docker | Configured for mock API mode by default |
@@ -127,6 +127,8 @@ If GNU Make is available:
 ```bash
 make test
 make lint
+make download-data
+make validate-data
 make demo-image
 make demo-video
 make benchmark
@@ -181,6 +183,21 @@ python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/out
 
 ## Dataset And Training
 
+Recommended public starter dataset:
+
+- Hugging Face: [`LibreYOLO/construction-safety-gsnvb`](https://huggingface.co/datasets/LibreYOLO/construction-safety-gsnvb)
+- Original Roboflow Universe dataset: [`construction-safety-gsnvb`](https://universe.roboflow.com/roboflow-100/construction-safety-gsnvb/dataset/1)
+- License: CC-BY-4.0
+- Classes: `helmet`, `no-helmet`, `no-vest`, `person`, `vest`
+- Splits validated locally: 997 train images, 119 validation images, 90 test images
+
+Download locally:
+
+```bash
+python -m pip install huggingface_hub
+python scripts/download_ppe_dataset.py --output data/raw/construction-safety-gsnvb
+```
+
 Expected YOLO dataset layout:
 
 ```text
@@ -194,33 +211,59 @@ data/processed/
   labels/test
 ```
 
+The validator also supports the common Ultralytics/Roboflow layout with `train/images`, `train/labels`, `valid/images`, and `test/images`.
+
 Validate dataset:
 
 ```bash
-python -m industrial_safety_vision.data.dataset_validation --config configs/train.yaml
+python -m industrial_safety_vision.data.dataset_validation \
+  --dataset-yaml data/raw/construction-safety-gsnvb/data.yaml \
+  --report reports/dataset_summary_construction_safety.json
 ```
 
-Train:
+Smoke train on the recommended dataset:
 
 ```bash
-python -m industrial_safety_vision.training.train_yolo --config configs/train.yaml
+python -m industrial_safety_vision.training.train_yolo \
+  --config configs/train.yaml \
+  --dataset data/raw/construction-safety-gsnvb/data.yaml \
+  --model yolo11n.pt \
+  --epochs 1 \
+  --batch-size 2 \
+  --image-size 320 \
+  --device 0
 ```
 
 Evaluate:
 
 ```bash
-python -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml --model models/best.pt --split val
+python -m industrial_safety_vision.training.evaluate_yolo \
+  --config configs/train.yaml \
+  --dataset data/raw/construction-safety-gsnvb/data.yaml \
+  --model runs/.../weights/best.pt \
+  --split val \
+  --device 0
 ```
 
 Detection metrics such as mAP@0.5 and mAP@0.5:0.95 differ from classification accuracy because a prediction must get both the class and bounding-box localization right.
 
+One local smoke-training run was completed on an NVIDIA MX450 with `yolo11n.pt`, 1 epoch, `imgsz=320`, `batch=2`. These numbers prove the training/evaluation pipeline runs; they are not production-quality model claims:
+
+| Metric | Value |
+| --- | ---: |
+| Precision | 0.660 |
+| Recall | 0.457 |
+| mAP@0.5 | 0.448 |
+| mAP@0.5:0.95 | 0.217 |
+
 ## Benchmark
 
-The committed benchmark example is a real local run of the mock pipeline, not neural-network inference:
+The project now includes both a mock-pipeline benchmark and a real YOLO CPU benchmark.
 
 | Backend | Device | Input size | Mean latency | P95 latency | FPS | Mode |
 | --- | --- | --- | --- | --- | --- | --- |
 | mock_detector_tracking_rules | CPU | 640 | 0.036 ms | 0.048 ms | 28011.21 | mock_pipeline |
+| pytorch_ultralytics `yolo11n.pt` | CPU | 640 | 69.728 ms | 75.878 ms | 14.34 | real_model |
 
 Reproduce:
 
@@ -231,7 +274,7 @@ python scripts/run_benchmark.py --mock --image docs/assets/demo_input.jpg --warm
 Real model benchmark:
 
 ```bash
-python scripts/run_benchmark.py --model models/best.pt --image docs/assets/demo_input.jpg
+python scripts/run_benchmark.py --model yolo11n.pt --image docs/assets/demo_input.jpg --device cpu
 ```
 
 ## ONNX Export
@@ -250,6 +293,12 @@ docker compose up api
 ```
 
 The compose service runs in mock mode by default so `/health`, `/model/info`, and `/metrics` work even without model weights.
+
+For a heavier image with YOLO/OpenCV runtime dependencies:
+
+```bash
+docker build --build-arg INSTALL_ML_DEPS=true -t industrial-safety-vision:ml .
+```
 
 ## Current Limitations
 

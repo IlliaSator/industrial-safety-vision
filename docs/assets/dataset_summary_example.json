@@ -1,0 +1,11 @@
+﻿{
+  "dataset": "LibreYOLO/construction-safety-gsnvb",
+  "license": "CC BY 4.0",
+  "classes": ["helmet", "no-helmet", "no-vest", "person", "vest"],
+  "splits": {
+    "train": {"images": 997, "labels": 6386},
+    "val": {"images": 119, "labels": 715},
+    "test": {"images": 90, "labels": 623}
+  },
+  "validation_issues": 0
+}

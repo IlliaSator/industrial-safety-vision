@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from industrial_safety_vision.training.dataset_config import materialize_ultralytics_dataset_yaml
+
 
 def evaluate_from_config(
     config_path: str | Path,
@@ -33,8 +35,12 @@ def evaluate_from_config(
         raise RuntimeError(msg) from exc
 
     model = YOLO(checkpoint)
+    ultralytics_dataset_yaml = materialize_ultralytics_dataset_yaml(
+        dataset_yaml,
+        output_path="reports/ultralytics_eval_dataset.yaml",
+    )
     results = model.val(
-        data=dataset_yaml,
+        data=str(ultralytics_dataset_yaml),
         split=split,
         device=device or config.get("training", {}).get("device"),
     )
