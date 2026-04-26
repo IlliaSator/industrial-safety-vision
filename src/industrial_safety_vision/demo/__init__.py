@@ -1,0 +1,1 @@
+"""Synthetic demo asset generation."""
