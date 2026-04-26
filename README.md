@@ -322,3 +322,330 @@ docker build --build-arg INSTALL_ML_DEPS=true -t industrial-safety-vision:ml .
 - ONNX/TensorRT optimized inference profile
 - Model monitoring and active-learning loop
 - Human-in-the-loop alert review
+
+---
+
+# Industrial Safety Vision (RU)
+
+[![CI](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml/badge.svg)](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml)
+
+Industrial Safety Vision - это production-style проект по Computer Vision для мониторинга промышленной безопасности. Идея проекта не в том, чтобы просто запустить YOLO на одной картинке, а в том, чтобы показать инженерную часть реальной CV-системы: проверку датасета, обучение и оценку модели, структурированные результаты инференса, обработку видео, трекинг работников, сглаживание алертов во времени, FastAPI-сервис, Docker и бенчмарки.
+
+Сейчас проект поддерживает два режима:
+
+1. **Demo/mock mode**: запускает весь пайплайн без весов модели. Этот режим удобен для CI, smoke-тестов API и быстрой проверки проекта.
+2. **Real model mode**: запускает YOLO-инференс с pretrained-моделью вроде `yolo11n.pt` или с кастомным PPE-чекпоинтом.
+
+Полноценный PPE safety mode требует нормально обученной кастомной модели. В репозитории есть workflow для публичного PPE-датасета и one-epoch smoke-training, но проект честно не выдает этот smoke-run за production-ready safety model.
+
+## Статус
+
+| Компонент | Статус |
+| --- | --- |
+| Compile check пакета | Проходит |
+| Unit-тесты | Проходят |
+| FastAPI health check | Работает в mock-режиме |
+| Примеры датасета | Реальные PPE-кадры лежат в `docs/assets/` |
+| Image demo | Работает в mock mode и real YOLO mode |
+| Video demo | Работает через synthetic/mock video pipeline |
+| Real YOLO inference | Поддерживается при наличии checkpoint/model name |
+| Custom PPE training | Smoke-tested на RF100 construction-safety dataset |
+| ONNX export | Поддерживается при наличии checkpoint |
+| Benchmarking | Есть mock pipeline benchmark и real `yolo11n.pt` CPU benchmark |
+| Docker | По умолчанию настроен для mock API mode |
+
+## Демо
+
+Ниже реальные кадры из рекомендованного PPE-датасета. Это небольшие примеры, закоммиченные только для README. Полный датасет хранится локально в `data/raw/` и игнорируется git. Исходный датасет распространяется под CC BY 4.0, поэтому при переиспользовании примеров нужно сохранять attribution.
+
+| Кадр из датасета | YOLO-разметка |
+| --- | --- |
+| ![PPE dataset frame with workers in helmets and vests](docs/assets/dataset_ppe_example_01.jpg) | ![Annotated PPE dataset frame with worker, helmet and vest boxes](docs/assets/dataset_ppe_example_01_annotated.jpg) |
+| ![Construction frame with workers and PPE variation](docs/assets/dataset_ppe_example_02.jpg) | ![Annotated construction frame with person, helmet, vest and no-vest labels](docs/assets/dataset_ppe_example_02_annotated.jpg) |
+
+Короткий preview GIF:
+
+![PPE dataset preview GIF](docs/assets/ppe_dataset_preview.gif)
+
+Разметка на изображениях выше взята из labels датасета. Это не попытка показать fake predictions от production-модели. Эти кадры нужны, чтобы сразу было видно, под какие сцены проект построен: работники на площадке, каски, жилеты, отсутствие PPE, плотные кадры и пересечения людей, где association logic может ошибаться.
+
+Для проверки пайплайна без весов в проекте также есть deterministic mock demo. Он специально воспроизводимый: один и тот же вход дает одинаковые detections, track IDs, safety alerts и JSON-выход.
+
+Пример alert JSON:
+
+```json
+[
+  {
+    "alert_type": "danger_zone_violation",
+    "severity": "critical",
+    "track_id": 1,
+    "frame_index": 26,
+    "message": "Worker #1 entered danger zone 'default_loading_zone'.",
+    "metadata": {
+      "zone": "default_loading_zone",
+      "mode": "synthetic_demo"
+    }
+  }
+]
+```
+
+Сгенерировать или обновить demo assets:
+
+```bash
+python scripts/generate_demo_assets.py
+```
+
+Запустить image demo без весов модели:
+
+```bash
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --output data/outputs --mock
+```
+
+Запустить synthetic video demo без весов модели:
+
+```bash
+python scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
+```
+
+Synthetic/mock mode показывает поведение системы: отрисовку, трекинг, safety rules, alert smoothing, API responses и сохранение результатов. Это не демонстрация качества нейросетевой модели.
+
+## Архитектура
+
+```mermaid
+flowchart LR
+    A[Image / Video / Webcam] --> B[Detector: YOLO or Mock]
+    B --> C[SimpleIoU Tracker]
+    C --> D[Safety Rules Engine]
+    B --> D
+    D --> E[Temporal Smoothing + Cooldown]
+    E --> F[Structured Alerts JSON/CSV]
+    B --> G[Annotated Image/Video]
+    C --> G
+    D --> G
+    F --> H[FastAPI / Reports]
+```
+
+## Почему это больше, чем YOLO demo
+
+Проект сфокусирован на ML engineering слое вокруг object detection:
+
+- структурированные domain objects вместо сырых model outputs
+- заменяемый detector interface
+- real-time video loop с расчетом FPS и latency
+- worker tracking
+- PPE association logic
+- danger-zone и vehicle-proximity rules
+- temporal smoothing и cooldown для алертов
+- API service с метриками
+- Docker deployment
+- воспроизводимые scripts для train/eval/data validation
+- ONNX export entrypoint
+- benchmark scripts
+- model card и error-analysis документация
+
+## Быстрый старт
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+python -m compileall src tests scripts
+python -m pytest -q
+ruff check .
+```
+
+Если установлен GNU Make:
+
+```bash
+make test
+make lint
+make download-data
+make validate-data
+make demo-image
+make demo-video
+make benchmark
+```
+
+## FastAPI
+
+Запуск в mock mode:
+
+```bash
+$env:INDUSTRIAL_SAFETY_MOCK_DETECTOR="true"
+python -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
+```
+
+Linux/macOS:
+
+```bash
+INDUSTRIAL_SAFETY_MOCK_DETECTOR=true python -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
+```
+
+Smoke checks:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/model/info
+curl http://localhost:8000/metrics
+curl -F "file=@docs/assets/dataset_ppe_example_01.jpg" http://localhost:8000/predict/image
+```
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+## Real Model Inference
+
+COCO smoke test:
+
+```bash
+python scripts/run_image_demo.py --image docs/assets/dataset_ppe_example_01.jpg --model yolo11n.pt --output data/outputs
+```
+
+Кастомная PPE-модель:
+
+```bash
+python scripts/run_image_demo.py --image docs/assets/dataset_ppe_example_01.jpg --model models/best.pt --output data/outputs
+python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/outputs/annotated_demo.mp4 --model models/best.pt
+```
+
+`models/best.pt` специально игнорируется git. Локальные checkpoints нужно класть в `models/`.
+
+## Датасет и обучение
+
+Рекомендованный публичный стартовый датасет:
+
+- Hugging Face: [`LibreYOLO/construction-safety-gsnvb`](https://huggingface.co/datasets/LibreYOLO/construction-safety-gsnvb)
+- Original Roboflow Universe dataset: [`construction-safety-gsnvb`](https://universe.roboflow.com/roboflow-100/construction-safety-gsnvb/dataset/1)
+- License: CC-BY-4.0
+- Classes: `helmet`, `no-helmet`, `no-vest`, `person`, `vest`
+- Локально проверенные splits: 997 train images, 119 validation images, 90 test images
+
+Скачать локально:
+
+```bash
+python -m pip install huggingface_hub
+python scripts/download_ppe_dataset.py --output data/raw/construction-safety-gsnvb
+```
+
+Ожидаемый YOLO dataset layout:
+
+```text
+data/processed/
+  dataset.yaml
+  images/train
+  images/val
+  images/test
+  labels/train
+  labels/val
+  labels/test
+```
+
+Валидатор также поддерживает распространенный Ultralytics/Roboflow layout: `train/images`, `train/labels`, `valid/images`, `test/images`.
+
+Проверить датасет:
+
+```bash
+python -m industrial_safety_vision.data.dataset_validation \
+  --dataset-yaml data/raw/construction-safety-gsnvb/data.yaml \
+  --report reports/dataset_summary_construction_safety.json
+```
+
+Smoke train на рекомендованном датасете:
+
+```bash
+python -m industrial_safety_vision.training.train_yolo \
+  --config configs/train.yaml \
+  --dataset data/raw/construction-safety-gsnvb/data.yaml \
+  --model yolo11n.pt \
+  --epochs 1 \
+  --batch-size 2 \
+  --image-size 320 \
+  --device 0
+```
+
+Evaluation:
+
+```bash
+python -m industrial_safety_vision.training.evaluate_yolo \
+  --config configs/train.yaml \
+  --dataset data/raw/construction-safety-gsnvb/data.yaml \
+  --model runs/.../weights/best.pt \
+  --split val \
+  --device 0
+```
+
+Detection metrics вроде mAP@0.5 и mAP@0.5:0.95 отличаются от classification accuracy: детектор должен правильно определить и класс, и локализацию bounding box.
+
+Один локальный smoke-training run был выполнен на NVIDIA MX450 с `yolo11n.pt`, 1 epoch, `imgsz=320`, `batch=2`. Эти числа показывают, что training/evaluation pipeline запускается, но это не production-quality метрики модели:
+
+| Metric | Value |
+| --- | ---: |
+| Precision | 0.660 |
+| Recall | 0.457 |
+| mAP@0.5 | 0.448 |
+| mAP@0.5:0.95 | 0.217 |
+
+## Benchmark
+
+В проекте есть mock-pipeline benchmark и real YOLO CPU benchmark.
+
+| Backend | Device | Input size | Mean latency | P95 latency | FPS | Mode |
+| --- | --- | --- | --- | --- | --- | --- |
+| mock_detector_tracking_rules | CPU | 640 | 0.036 ms | 0.048 ms | 28011.21 | mock_pipeline |
+| pytorch_ultralytics `yolo11n.pt` | CPU | 640 | 69.728 ms | 75.878 ms | 14.34 | real_model |
+
+Воспроизвести:
+
+```bash
+python scripts/run_benchmark.py --mock --image docs/assets/demo_input.jpg --warmup-runs 3 --benchmark-runs 10
+```
+
+Real model benchmark:
+
+```bash
+python scripts/run_benchmark.py --model yolo11n.pt --image docs/assets/dataset_ppe_example_01.jpg --device cpu
+```
+
+## ONNX Export
+
+```bash
+python scripts/export_onnx.py --model models/best.pt --output-dir models --imgsz 640
+```
+
+Если checkpoint отсутствует, скрипт завершится с понятным сообщением. ONNX-файлы игнорируются git.
+
+## Docker
+
+```bash
+docker build -t industrial-safety-vision:local .
+docker compose up api
+```
+
+Compose service по умолчанию запускается в mock mode, поэтому `/health`, `/model/info` и `/metrics` работают даже без весов модели.
+
+Для более тяжелого образа с YOLO/OpenCV runtime dependencies:
+
+```bash
+docker build --build-arg INSTALL_ML_DEPS=true -t industrial-safety-vision:ml .
+```
+
+## Текущие ограничения
+
+- В репозиторий не включена custom PPE model.
+- Demo mode использует deterministic synthetic/mock detections.
+- COCO pretrained models не дают надежные классы helmet/vest.
+- PPE association основан на overlap bounding boxes и может ошибаться при пересечении людей.
+- Danger zones требуют calibration под конкретную камеру и площадку.
+- Safety-critical deployment требует human validation, monitoring, audit logs и согласованный escalation process.
+
+## Roadmap
+
+- Train/evaluate custom PPE model на документированном датасете
+- Интеграция ByteTrack или DeepSORT
+- RTSP stream support
+- Perspective calibration для vehicle proximity
+- ONNX/TensorRT optimized inference profile
+- Model monitoring и active-learning loop
+- Human-in-the-loop alert review
