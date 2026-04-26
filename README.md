@@ -1,87 +1,187 @@
 # Industrial Safety Vision
 
-Industrial Safety Vision is a production-style computer vision system for real-time workplace safety monitoring. It detects workers, helmets, safety vests, forklifts/vehicles, tracks workers across frames, generates structured safety alerts, and exposes inference through FastAPI and Docker.
+[![CI](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml/badge.svg)](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml)
 
-The project is designed as an ML engineering portfolio system, not a toy YOLO notebook. It focuses on the layers around the model: reproducible training, dataset validation, structured inference outputs, real-time constraints, safety-rule smoothing, deployment, benchmarking, tests, and failure analysis.
+Industrial Safety Vision is a production-style computer vision project for real-time industrial workplace safety monitoring. It combines YOLO-style object detection, worker tracking, a safety-rule engine, temporal alert smoothing, FastAPI serving, Docker packaging, dataset validation, training/evaluation scripts, ONNX export hooks, and benchmark tooling.
 
-## Why It Matters
+This repository currently supports two explicit modes:
 
-Industrial sites need consistent monitoring for PPE compliance, danger-zone access, and worker/vehicle proximity. Computer vision can help safety teams review incidents faster and detect risky patterns, especially in warehouses, factories, loading zones, and construction-like environments. This repository demonstrates how that kind of system can be structured before production hardening.
+1. **Demo/mock mode**: validates the full application pipeline without model weights.
+2. **Real model mode**: runs YOLO inference with a pretrained COCO model or a custom PPE checkpoint.
+
+Full PPE safety mode requires a custom model trained on classes such as `person`, `helmet`, `safety_vest`, `forklift`, and `vehicle`. No trained PPE checkpoint or fake metrics are committed.
+
+## Status
+
+| Component | Status |
+| --- | --- |
+| Package compile check | Passing |
+| Unit tests | Passing |
+| FastAPI health check | Working in mock mode |
+| Image demo | Working in deterministic mock mode |
+| Synthetic video demo | Working in deterministic mock mode |
+| Real YOLO inference | Supported when a checkpoint/model name is provided |
+| Custom PPE training | Supported via YOLO-format dataset |
+| ONNX export | Supported when a model checkpoint exists |
+| Benchmarking | Working; mock pipeline benchmark included |
+| Docker | Configured for mock API mode by default |
+
+## Demo
+
+Synthetic input:
+
+![Synthetic input](docs/assets/demo_input.jpg)
+
+Deterministic annotated output:
+
+![Annotated output](docs/assets/demo_input_annotated.jpg)
+
+Expected safety overlay:
+
+![Expected overlay](docs/assets/demo_expected_overlay.jpg)
+
+Example alert JSON:
+
+```json
+[
+  {
+    "alert_type": "danger_zone_violation",
+    "severity": "critical",
+    "track_id": 1,
+    "frame_index": 26,
+    "message": "Worker #1 entered danger zone 'default_loading_zone'.",
+    "metadata": {
+      "zone": "default_loading_zone",
+      "mode": "synthetic_demo"
+    }
+  }
+]
+```
+
+Generate demo assets:
+
+```bash
+python scripts/generate_demo_assets.py
+```
+
+Run image demo without model weights:
+
+```bash
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --output data/outputs --mock
+```
+
+Run synthetic video pipeline demo without model weights:
+
+```bash
+python scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
+```
+
+Synthetic mode demonstrates system behavior: drawing, tracking, safety rules, alert smoothing, and output serialization. It is not a neural-network accuracy demo.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Image / Video / Webcam] --> B[YOLO Detector]
+    A[Image / Video / Webcam] --> B[Detector: YOLO or Mock]
     B --> C[SimpleIoU Tracker]
     C --> D[Safety Rules Engine]
     B --> D
     D --> E[Temporal Smoothing + Cooldown]
-    E --> F[Structured Alerts]
-    F --> G[FastAPI / JSON / CSV]
-    B --> H[Annotated Video Output]
-    C --> H
-    D --> H
+    E --> F[Structured Alerts JSON/CSV]
+    B --> G[Annotated Image/Video]
+    C --> G
+    D --> G
+    F --> H[FastAPI / Reports]
 ```
 
-## Key Features
+## What Makes This More Than A YOLO Demo
 
-- YOLO object detection abstraction with structured `Detection` objects
-- Real-time video inference with FPS and latency accounting
-- Worker tracking with a pluggable `SimpleIoUTracker`
-- PPE compliance checks for helmets and safety vests
-- Danger-zone polygon violation detection
-- Vehicle/forklift proximity alerts
-- Temporal smoothing and cooldown to reduce alert spam
-- FastAPI inference service with image/video endpoints
-- Docker and docker-compose deployment
-- YOLO training and evaluation CLIs
-- Dataset validation and train/val/test splitting utilities
-- ONNX export and latency benchmark scripts
-- Fast pytest suite and GitHub Actions CI
+The project focuses on the ML engineering layer around object detection:
 
-## More Than A YOLO Demo
-
-Unlike a basic object detection demo, this project focuses on the ML engineering layer around the model: dataset checks, reproducible training entrypoints, structured domain objects, real-time video processing, tracking, configurable safety rules, alert smoothing, API serving, Docker deployment, system metrics, benchmarking, and documented failure modes.
+- structured domain objects instead of raw model outputs
+- swappable detector interface
+- real-time video loop with FPS/latency accounting
+- worker tracking
+- PPE association logic
+- danger-zone and vehicle-proximity rules
+- temporal smoothing and cooldown
+- API service with metrics
+- Docker deployment
+- reproducible train/eval/data validation scripts
+- ONNX export entrypoint
+- benchmark scripts
+- model card and error-analysis documentation
 
 ## Quickstart
 
 ```bash
-make install
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+python -m compileall src tests scripts
+python -m pytest -q
+ruff check .
+```
+
+If GNU Make is available:
+
+```bash
 make test
 make lint
+make demo-image
+make demo-video
+make benchmark
 ```
 
-Run image demo:
+## FastAPI
+
+Start in mock mode:
 
 ```bash
-python scripts/run_image_demo.py --image data/samples/sample.jpg --model models/best.pt --output data/outputs
+$env:INDUSTRIAL_SAFETY_MOCK_DETECTOR="true"
+python -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
 ```
 
-Run video demo:
+Linux/macOS:
 
 ```bash
-python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/outputs/annotated_demo.mp4 --model models/best.pt --conf 0.35 --frame-skip 1
+INDUSTRIAL_SAFETY_MOCK_DETECTOR=true python -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
 ```
 
-Start API locally:
+Smoke checks:
 
 ```bash
-make api
+curl http://localhost:8000/health
+curl http://localhost:8000/model/info
+curl http://localhost:8000/metrics
+curl -F "file=@docs/assets/demo_input.jpg" http://localhost:8000/predict/image
 ```
 
-Start with Docker:
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+## Real Model Inference
+
+COCO smoke test:
 
 ```bash
-make docker-build
-docker compose up api
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --model yolov8n.pt --output data/outputs
 ```
 
-## Dataset
+Custom PPE model:
 
-The project supports custom PPE datasets in YOLO format. Sample/demo mode can use small local assets, but full safety mode expects a trained detector with classes such as `person`, `helmet`, `safety_vest`, `forklift`, and `vehicle`.
+```bash
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --model models/best.pt --output data/outputs
+python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/outputs/annotated_demo.mp4 --model models/best.pt
+```
 
-Expected format:
+`models/best.pt` is intentionally ignored by git. Put local checkpoints under `models/`.
+
+## Dataset And Training
+
+Expected YOLO dataset layout:
 
 ```text
 data/processed/
@@ -94,97 +194,78 @@ data/processed/
   labels/test
 ```
 
-Validate labels and structure:
+Validate dataset:
 
 ```bash
-make validate-data
+python -m industrial_safety_vision.data.dataset_validation --config configs/train.yaml
 ```
 
-Create splits from a flat image/label directory:
+Train:
 
 ```bash
-python -m industrial_safety_vision.data.split_dataset --images data/raw/images --labels data/raw/labels --output data/processed
+python -m industrial_safety_vision.training.train_yolo --config configs/train.yaml
 ```
 
-## Training
-
-Configuration lives in `configs/train.yaml`.
+Evaluate:
 
 ```bash
-make train
-python -m industrial_safety_vision.training.train_yolo --config configs/train.yaml --epochs 50 --batch-size 16 --image-size 640
-```
-
-Training outputs go to local artifact folders such as `runs/` and `reports/`, which are ignored by git. No weights or datasets are committed.
-
-## Evaluation
-
-```bash
-make evaluate
 python -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml --model models/best.pt --split val
 ```
 
-Detection metrics differ from classification metrics because a prediction must identify both the right class and a sufficiently overlapping bounding box. The evaluation script reports mAP@0.5, mAP@0.5:0.95, precision, recall, and raw Ultralytics metrics when available.
+Detection metrics such as mAP@0.5 and mAP@0.5:0.95 differ from classification accuracy because a prediction must get both the class and bounding-box localization right.
 
-## Real-Time Inference
+## Benchmark
 
-The video pipeline supports video files, webcam indices, frame skipping, max-frame limits, annotated output video, alerts JSON/CSV, average latency, and measured FPS. Safety rules are configured in `configs/safety_rules.yaml`; tracking settings live in `configs/tracking.yaml`.
+The committed benchmark example is a real local run of the mock pipeline, not neural-network inference:
 
-## API Usage
-
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/model/info
-curl -F "file=@data/samples/sample.jpg" http://localhost:8000/predict/image
-curl -F "file=@data/samples/demo.mp4" http://localhost:8000/predict/video
-curl http://localhost:8000/alerts
-curl http://localhost:8000/metrics
-```
-
-More examples are in [docs/api_usage.md](docs/api_usage.md).
-
-## Benchmarking
-
-```bash
-make export-onnx
-make benchmark
-```
-
-No fake benchmark numbers are committed. Run the benchmark locally with a real model to generate `reports/benchmark_results.json`.
-
-| Backend | Device | Input size | Mean latency | P95 latency | FPS | Model size |
+| Backend | Device | Input size | Mean latency | P95 latency | FPS | Mode |
 | --- | --- | --- | --- | --- | --- | --- |
-| PyTorch / Ultralytics | TBD | TBD | Run benchmark | Run benchmark | Run benchmark | Run benchmark |
-| ONNX Runtime | TBD | TBD | Run benchmark | Run benchmark | Run benchmark | Run benchmark |
+| mock_detector_tracking_rules | CPU | 640 | 0.029 ms | 0.051 ms | 34211.44 | mock_pipeline |
 
-## Model Card Summary
+Reproduce:
 
-Intended use: assist industrial safety review by detecting PPE and spatial safety-rule violations in camera footage.
+```bash
+python scripts/run_benchmark.py --mock --image docs/assets/demo_input.jpg --warmup-runs 3 --benchmark-runs 10
+```
 
-Limitations: performance depends on dataset quality, camera angle, lighting, occlusion, and calibration. PPE association is approximate and should be validated with site-specific data.
+Real model benchmark:
 
-This project is not a replacement for certified safety systems or human supervision.
+```bash
+python scripts/run_benchmark.py --model models/best.pt --image docs/assets/demo_input.jpg
+```
 
-## Error Analysis
+## ONNX Export
 
-Common failure modes include helmets missed under occlusion, reflective vest false positives, small workers in the background, low-light frames, motion blur, unusual camera angles, overlapping workers, and PPE association errors when equipment boxes overlap the wrong person.
+```bash
+python scripts/export_onnx.py --model models/best.pt --output-dir models --imgsz 640
+```
 
-## Project Limitations
+If the checkpoint is missing, the script exits with a clear message. ONNX files are ignored by git.
 
-- Requires a custom PPE dataset for production-quality safety classes
-- Camera geometry and danger zones must be calibrated per site
-- Current tracker is simple IoU matching, not re-identification
-- ONNX backend currently focuses on execution/benchmark scaffolding
-- Safety-critical deployments require additional validation, monitoring, and human review
+## Docker
+
+```bash
+docker build -t industrial-safety-vision:local .
+docker compose up api
+```
+
+The compose service runs in mock mode by default so `/health`, `/model/info`, and `/metrics` work even without model weights.
+
+## Current Limitations
+
+- No custom PPE model is included.
+- Demo mode uses deterministic synthetic/mock detections.
+- COCO pretrained models do not provide reliable helmet/vest classes.
+- PPE association is based on bounding-box overlap and can fail with overlapping people.
+- Danger zones require camera/site calibration.
+- Safety-critical deployment requires human validation, monitoring, audit logs, and a reviewed escalation process.
 
 ## Roadmap
 
-- ByteTrack integration
-- DeepSORT integration
+- Train/evaluate a custom PPE model on a documented dataset
+- ByteTrack or DeepSORT integration
 - RTSP stream support
-- Active learning loop
-- Model monitoring and drift checks
-- TensorRT optimization
-- ROS2 integration
-- Edge deployment profile
+- Perspective calibration for vehicle proximity
+- ONNX/TensorRT optimized inference profile
+- Model monitoring and active-learning loop
 - Human-in-the-loop alert review

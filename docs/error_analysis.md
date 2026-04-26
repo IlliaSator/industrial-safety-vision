@@ -13,3 +13,11 @@ Expected failure cases to evaluate with real site footage:
 - Perspective distortion making vehicle proximity thresholds unreliable
 
 Mitigations include stronger dataset coverage, camera-specific validation sets, perspective calibration, temporal smoothing, better trackers, and human review of alert samples.
+
+## Suggested Review Workflow
+
+1. Sample alerts and non-alert frames per camera.
+2. Tag false positives, false negatives, and association errors.
+3. Split errors by lighting, distance, occlusion, and camera angle.
+4. Add representative failures to the validation set.
+5. Re-run evaluation and compare per-class precision/recall before deployment.
