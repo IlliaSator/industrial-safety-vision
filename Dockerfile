@@ -18,6 +18,7 @@ RUN python -m pip install --upgrade pip && \
 
 COPY configs ./configs
 COPY scripts ./scripts
+COPY data/README.md ./data/README.md
 
 EXPOSE 8000
 

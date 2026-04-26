@@ -22,3 +22,5 @@ jobs:
         run: ruff check .
       - name: Test
         run: pytest
+      - name: Docker build
+        run: docker build -t industrial-safety-vision:test .
