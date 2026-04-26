@@ -220,7 +220,7 @@ The committed benchmark example is a real local run of the mock pipeline, not ne
 
 | Backend | Device | Input size | Mean latency | P95 latency | FPS | Mode |
 | --- | --- | --- | --- | --- | --- | --- |
-| mock_detector_tracking_rules | CPU | 640 | 0.029 ms | 0.051 ms | 34211.44 | mock_pipeline |
+| mock_detector_tracking_rules | CPU | 640 | 0.036 ms | 0.048 ms | 28011.21 | mock_pipeline |
 
 Reproduce:
 

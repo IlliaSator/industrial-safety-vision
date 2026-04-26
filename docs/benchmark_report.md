@@ -1,6 +1,6 @@
 # Benchmark Report
 
-Generated: `2026-04-26T14:56:05.984147+00:00`
+Generated: `2026-04-26T15:12:30.771980+00:00`
 
 Mode: `mock_pipeline`
 
@@ -14,7 +14,7 @@ Hardware:
 
 | Backend | Device | Input size | Mean latency | P50 latency | P95 latency | FPS | Model size MB |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| mock_detector_tracking_rules | cpu | 640 | 0.029 ms | 0.026 ms | 0.051 ms | 34211.44 | n/a |
+| mock_detector_tracking_rules | cpu | 640 | 0.036 ms | 0.033 ms | 0.048 ms | 28011.21 | n/a |
 
 Benchmark configuration:
 

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-26T14:56:05.984147+00:00",
+  "timestamp": "2026-04-26T15:12:30.771980+00:00",
   "mode": "mock_pipeline",
   "hardware": {
     "platform": "Windows-11-10.0.26200-SP0",
@@ -14,10 +14,10 @@
       "backend": "mock_detector_tracking_rules",
       "device": "cpu",
       "model_size_mb": null,
-      "mean_latency_ms": 0.029229989740997553,
-      "p50_latency_ms": 0.026150024496018887,
-      "p95_latency_ms": 0.050600036047399044,
-      "fps": 34211.43862385332
+      "mean_latency_ms": 0.035699992440640926,
+      "p50_latency_ms": 0.033299962524324656,
+      "p95_latency_ms": 0.047600013203918934,
+      "fps": 28011.21041307556
     }
   ]
 }
