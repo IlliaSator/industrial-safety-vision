@@ -1,7 +1,10 @@
+import numpy as np
 from fastapi.testclient import TestClient
 
 from industrial_safety_vision.api.main import create_app
+from industrial_safety_vision.api.routes import InferenceService
 from industrial_safety_vision.core import BoundingBox, Detection
+from industrial_safety_vision.utils.image_io import write_image
 
 
 class FakeService:
@@ -72,3 +75,24 @@ def test_metrics_endpoint_with_mocked_service() -> None:
 
     assert response.status_code == 200
     assert response.json()["processed_images"] == 0
+
+
+def test_api_smoke_with_real_mock_service(tmp_path) -> None:
+    image_path = tmp_path / "sample.jpg"
+    write_image(image_path, np.zeros((120, 160, 3), dtype=np.uint8))
+    app = create_app(service=InferenceService(mock_detector=True))
+    client = TestClient(app)
+
+    info = client.get("/model/info")
+    prediction = client.post(
+        "/predict/image",
+        files={"file": ("sample.jpg", image_path.read_bytes(), "image/jpeg")},
+    )
+    metrics = client.get("/metrics")
+
+    assert info.status_code == 200
+    assert info.json()["backend"] == "mock_safety_detector"
+    assert prediction.status_code == 200
+    assert prediction.json()["detections"][0]["class_name"] == "person"
+    assert metrics.json()["processed_images"] == 1
+    assert metrics.json()["mode"] == "mock"

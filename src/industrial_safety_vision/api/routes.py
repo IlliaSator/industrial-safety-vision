@@ -32,7 +32,8 @@ router = APIRouter()
 class InferenceService:
     """Simple in-memory service state for demos and tests."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, mock_detector: bool | None = None) -> None:
+        self.mock_detector = settings.mock_detector if mock_detector is None else mock_detector
         self._detector: YOLODetector | MockSafetyDetector | None = None
         self.processed_images = 0
         self.processed_videos = 0
@@ -43,7 +44,7 @@ class InferenceService:
     @property
     def detector(self) -> YOLODetector | MockSafetyDetector:
         if self._detector is None:
-            if settings.mock_detector:
+            if self.mock_detector:
                 self._detector = MockSafetyDetector()
             else:
                 self._detector = YOLODetector(
@@ -80,6 +81,7 @@ class InferenceService:
             "average_inference_latency_ms": _average(self.latencies_ms),
             "average_fps": _average(self.video_fps_values),
             "total_alerts_generated": len(self.alerts),
+            "mode": "mock" if self.mock_detector else "real_model",
         }
 
 
