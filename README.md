@@ -2,14 +2,14 @@
 
 [![CI](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml/badge.svg)](https://github.com/IlliaSator/industrial-safety-vision/actions/workflows/ci.yml)
 
-Industrial Safety Vision is a production-style computer vision project for real-time industrial workplace safety monitoring. It combines YOLO-style object detection, worker tracking, a safety-rule engine, temporal alert smoothing, FastAPI serving, Docker packaging, dataset validation, training/evaluation scripts, ONNX export hooks, and benchmark tooling.
+Industrial Safety Vision is a production-style computer vision project for workplace safety monitoring. The goal is not just to run YOLO on a picture, but to show the engineering around a real CV system: dataset checks, training and evaluation entrypoints, structured detections, video inference, worker tracking, temporal alert smoothing, an API service, Docker, and benchmarking.
 
 This repository currently supports two explicit modes:
 
-1. **Demo/mock mode**: validates the full application pipeline without model weights.
-2. **Real model mode**: runs YOLO inference with a pretrained COCO model or a custom PPE checkpoint.
+1. **Demo/mock mode**: runs the full application pipeline without model weights. This is useful for CI, API smoke tests, and portfolio review.
+2. **Real model mode**: runs YOLO inference with a pretrained model name such as `yolo11n.pt` or with a custom PPE checkpoint.
 
-Full PPE safety mode requires a custom model trained on classes such as `person`, `helmet`, `safety_vest`, `forklift`, and `vehicle`. No trained PPE checkpoint or fake metrics are committed.
+Full PPE safety mode still needs a properly trained custom checkpoint. The repo includes a public PPE dataset workflow and a one-epoch smoke-training run, but it does not pretend that this is a production-grade safety model.
 
 ## Status
 
@@ -18,27 +18,31 @@ Full PPE safety mode requires a custom model trained on classes such as `person`
 | Package compile check | Passing |
 | Unit tests | Passing |
 | FastAPI health check | Working in mock mode |
-| Image demo | Working in deterministic mock mode |
-| Synthetic video demo | Working in deterministic mock mode |
+| Dataset examples | Real PPE dataset frames included under `docs/assets/` |
+| Image demo | Working in mock mode and real YOLO mode |
+| Video demo | Working with synthetic/mock video pipeline |
 | Real YOLO inference | Supported when a checkpoint/model name is provided |
 | Custom PPE training | Smoke-tested on RF100 construction-safety dataset |
 | ONNX export | Supported when a model checkpoint exists |
-| Benchmarking | Working; mock pipeline benchmark included |
+| Benchmarking | Mock pipeline and real `yolo11n.pt` CPU benchmark included |
 | Docker | Configured for mock API mode by default |
 
 ## Demo
 
-Synthetic input:
+Here are real frames from the recommended PPE dataset. These images are small committed examples only; the full dataset stays under `data/raw/` and is ignored by git. The source dataset is distributed as CC BY 4.0, so keep attribution if you reuse the examples.
 
-![Synthetic input](docs/assets/demo_input.jpg)
+| Dataset frame | YOLO label overlay |
+| --- | --- |
+| ![PPE dataset frame with workers in helmets and vests](docs/assets/dataset_ppe_example_01.jpg) | ![Annotated PPE dataset frame with worker, helmet and vest boxes](docs/assets/dataset_ppe_example_01_annotated.jpg) |
+| ![Construction frame with workers and PPE variation](docs/assets/dataset_ppe_example_02.jpg) | ![Annotated construction frame with person, helmet, vest and no-vest labels](docs/assets/dataset_ppe_example_02_annotated.jpg) |
 
-Deterministic annotated output:
+Short preview GIF:
 
-![Annotated output](docs/assets/demo_input_annotated.jpg)
+![PPE dataset preview GIF](docs/assets/ppe_dataset_preview.gif)
 
-Expected safety overlay:
+The overlays above come from the dataset labels, not from a claimed production model. They are included so the repository immediately shows the kind of scenes the system is designed for: people on worksites, helmets, safety vests, missing PPE cases, and crowded camera views where association can get tricky.
 
-![Expected overlay](docs/assets/demo_expected_overlay.jpg)
+For a no-weights pipeline check, the project still ships a deterministic mock demo. It is deliberately boring in a good way: the same input produces the same detections, tracking IDs, safety-rule output, and alert JSON every time.
 
 Example alert JSON:
 
@@ -58,7 +62,7 @@ Example alert JSON:
 ]
 ```
 
-Generate demo assets:
+Generate or refresh demo assets:
 
 ```bash
 python scripts/generate_demo_assets.py
@@ -76,7 +80,7 @@ Run synthetic video pipeline demo without model weights:
 python scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
 ```
 
-Synthetic mode demonstrates system behavior: drawing, tracking, safety rules, alert smoothing, and output serialization. It is not a neural-network accuracy demo.
+Synthetic/mock mode demonstrates system behavior: drawing, tracking, safety rules, alert smoothing, API responses, and output serialization. It is not a neural-network accuracy demo.
 
 ## Architecture
 
@@ -155,7 +159,7 @@ Smoke checks:
 curl http://localhost:8000/health
 curl http://localhost:8000/model/info
 curl http://localhost:8000/metrics
-curl -F "file=@docs/assets/demo_input.jpg" http://localhost:8000/predict/image
+curl -F "file=@docs/assets/dataset_ppe_example_01.jpg" http://localhost:8000/predict/image
 ```
 
 Swagger UI:
@@ -169,13 +173,13 @@ http://localhost:8000/docs
 COCO smoke test:
 
 ```bash
-python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --model yolov8n.pt --output data/outputs
+python scripts/run_image_demo.py --image docs/assets/dataset_ppe_example_01.jpg --model yolo11n.pt --output data/outputs
 ```
 
 Custom PPE model:
 
 ```bash
-python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --model models/best.pt --output data/outputs
+python scripts/run_image_demo.py --image docs/assets/dataset_ppe_example_01.jpg --model models/best.pt --output data/outputs
 python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/outputs/annotated_demo.mp4 --model models/best.pt
 ```
 
@@ -274,7 +278,7 @@ python scripts/run_benchmark.py --mock --image docs/assets/demo_input.jpg --warm
 Real model benchmark:
 
 ```bash
-python scripts/run_benchmark.py --model yolo11n.pt --image docs/assets/demo_input.jpg --device cpu
+python scripts/run_benchmark.py --model yolo11n.pt --image docs/assets/dataset_ppe_example_01.jpg --device cpu
 ```
 
 ## ONNX Export
