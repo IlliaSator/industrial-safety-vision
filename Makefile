@@ -1,41 +1,52 @@
-.PHONY: install test lint train evaluate validate-data demo-image demo-video api docker-build docker-run export-onnx benchmark
+PYTHON ?= python
+MOCK ?= true
+
+export INDUSTRIAL_SAFETY_MOCK_DETECTOR ?= $(MOCK)
+
+.PHONY: install test lint format train evaluate validate-data generate-demo demo-image demo-video api docker-build docker-run export-onnx benchmark
 
 install:
-	python -m pip install --upgrade pip
-	python -m pip install -e ".[dev]"
+	$(PYTHON) -m pip install --upgrade pip
+	$(PYTHON) -m pip install -e ".[dev]"
 
 test:
-	pytest
+	$(PYTHON) -m pytest -q
 
 lint:
 	ruff check .
 
+format:
+	ruff check . --fix
+
 train:
-	python -m industrial_safety_vision.training.train_yolo --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.training.train_yolo --config configs/train.yaml
 
 evaluate:
-	python -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.training.evaluate_yolo --config configs/train.yaml
 
 validate-data:
-	python -m industrial_safety_vision.data.dataset_validation --config configs/train.yaml
+	$(PYTHON) -m industrial_safety_vision.data.dataset_validation --config configs/train.yaml
 
-demo-image:
-	python scripts/run_image_demo.py --image data/samples/sample.jpg --output data/outputs
+generate-demo:
+	$(PYTHON) scripts/generate_demo_assets.py
 
-demo-video:
-	python scripts/run_video_demo.py --input data/samples/demo.mp4 --output data/outputs/annotated_demo.mp4
+demo-image: generate-demo
+	$(PYTHON) scripts/run_image_demo.py --image docs/assets/demo_input.jpg --output data/outputs --mock
+
+demo-video: generate-demo
+	$(PYTHON) scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
 
 api:
-	uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
+	$(PYTHON) -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
 
 docker-build:
 	docker build -t industrial-safety-vision:latest .
 
 docker-run:
-	docker run --rm -p 8000:8000 -v ./models:/app/models -v ./data:/app/data industrial-safety-vision:latest
+	docker run --rm -p 8000:8000 -e INDUSTRIAL_SAFETY_MOCK_DETECTOR=true -v ./models:/app/models -v ./data:/app/data industrial-safety-vision:latest
 
 export-onnx:
-	python scripts/export_onnx.py --model models/best.pt --output models/best.onnx
+	$(PYTHON) scripts/export_onnx.py --model models/best.pt --output-dir models
 
 benchmark:
-	python scripts/run_benchmark.py --model models/best.pt
+	$(PYTHON) scripts/run_benchmark.py --mock --output reports/benchmark_results.json

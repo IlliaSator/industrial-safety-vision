@@ -1,9 +1,9 @@
 # API Usage
 
-Start locally:
+Start locally in mock mode:
 
 ```bash
-uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
+INDUSTRIAL_SAFETY_MOCK_DETECTOR=true python -m uvicorn industrial_safety_vision.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Health:
@@ -21,7 +21,7 @@ curl http://localhost:8000/model/info
 Image prediction:
 
 ```bash
-curl -F "file=@data/samples/sample.jpg" http://localhost:8000/predict/image
+curl -F "file=@docs/assets/demo_input.jpg" http://localhost:8000/predict/image
 ```
 
 Video prediction:

@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-04-26T15:12:30.771980+00:00",
+  "mode": "mock_pipeline",
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "python": "3.12.8"
+  },
+  "input_size": 640,
+  "warmup_runs": 3,
+  "benchmark_runs": 10,
+  "backends": [
+    {
+      "backend": "mock_detector_tracking_rules",
+      "device": "cpu",
+      "model_size_mb": null,
+      "mean_latency_ms": 0.035699992440640926,
+      "p50_latency_ms": 0.033299962524324656,
+      "p95_latency_ms": 0.047600013203918934,
+      "fps": 28011.21041307556
+    }
+  ]
+}

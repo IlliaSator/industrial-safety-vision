@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "feature/**"]
+    branches: ["main", "feature/**", "polish/**"]
   pull_request:
     branches: ["main"]
 
@@ -20,7 +20,9 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
+      - name: Compile
+        run: python -m compileall src tests scripts
       - name: Test
-        run: pytest
+        run: python -m pytest -q
       - name: Docker build
         run: docker build -t industrial-safety-vision:test .

@@ -1,0 +1,13 @@
+[
+  {
+    "alert_type": "danger_zone_violation",
+    "severity": "critical",
+    "track_id": 1,
+    "frame_index": 26,
+    "message": "Worker #1 entered danger zone 'default_loading_zone'.",
+    "metadata": {
+      "zone": "default_loading_zone",
+      "mode": "synthetic_demo"
+    }
+  }
+]

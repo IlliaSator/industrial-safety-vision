@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import cv2
-
 from industrial_safety_vision.inference.detector import YOLODetector
+from industrial_safety_vision.inference.mock_detector import MockSafetyDetector
+from industrial_safety_vision.utils.image_io import read_image, write_image
 from industrial_safety_vision.visualization.draw import draw_detections
 
 
@@ -18,6 +18,7 @@ def run_image_inference(
     confidence: float = 0.35,
     iou: float = 0.45,
     device: str = "auto",
+    mock: bool = False,
 ) -> Path:
     """Run detector on one image and save an annotated copy."""
 
@@ -25,15 +26,16 @@ def run_image_inference(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    frame = cv2.imread(str(image_path))
-    if frame is None:
-        msg = f"Failed to read image: {image_path}"
-        raise ValueError(msg)
+    frame = read_image(image_path)
 
-    detector = YOLODetector(model_path, confidence=confidence, iou=iou, device=device)
+    detector = (
+        MockSafetyDetector()
+        if mock
+        else YOLODetector(model_path, confidence=confidence, iou=iou, device=device)
+    )
     detections = detector.predict_frame(frame)
     annotated = draw_detections(frame, detections)
 
     output_path = output_dir / f"{image_path.stem}_annotated{image_path.suffix}"
-    cv2.imwrite(str(output_path), annotated)
+    write_image(output_path, annotated)
     return output_path
