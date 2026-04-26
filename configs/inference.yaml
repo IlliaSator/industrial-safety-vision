@@ -1,0 +1,17 @@
+model:
+  path: models/best.pt
+  confidence: 0.35
+  iou: 0.45
+  device: auto
+classes:
+  safety:
+    - person
+    - helmet
+    - safety_vest
+    - forklift
+    - vehicle
+    - no_helmet
+    - missing_helmet
+    - no_vest
+    - missing_vest
+output_dir: data/outputs

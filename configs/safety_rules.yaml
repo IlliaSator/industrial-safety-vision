@@ -1,0 +1,28 @@
+rules:
+  missing_helmet:
+    enabled: true
+    consecutive_frames: 5
+    cooldown_frames: 50
+    min_overlap_ratio: 0.02
+  missing_vest:
+    enabled: true
+    consecutive_frames: 5
+    cooldown_frames: 50
+    min_overlap_ratio: 0.08
+  danger_zone:
+    enabled: true
+    consecutive_frames: 3
+    cooldown_frames: 50
+    position: bottom_center
+    zones:
+      - name: default_loading_zone
+        polygon:
+          - [100, 300]
+          - [540, 300]
+          - [620, 470]
+          - [60, 470]
+  vehicle_proximity:
+    enabled: true
+    consecutive_frames: 3
+    cooldown_frames: 50
+    distance_threshold_px: 120

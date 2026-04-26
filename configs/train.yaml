@@ -1,0 +1,13 @@
+dataset:
+  data_yaml: data/processed/dataset.yaml
+  project_dir: runs/train
+model:
+  checkpoint: yolov8n.pt
+  image_size: 640
+training:
+  epochs: 50
+  batch_size: 16
+  device: auto
+  workers: 4
+outputs:
+  metrics_path: reports/training_metrics.json

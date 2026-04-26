@@ -1,0 +1,6 @@
+tracker:
+  type: simple_iou
+  class_names:
+    - person
+  iou_threshold: 0.3
+  max_missed_frames: 10

@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    image: industrial-safety-vision:latest
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PATH: /app/models/best.pt
+      DEVICE: cpu
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./configs:/app/configs
