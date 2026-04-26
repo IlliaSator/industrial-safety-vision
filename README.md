@@ -118,12 +118,31 @@ The project focuses on the ML engineering layer around object detection:
 
 ## Quickstart
 
+Recommended path for a local reviewer:
+
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+python scripts/smoke_check.py
+```
+
+`smoke_check.py` runs compile checks, unit tests, lint, mock image demo, synthetic video demo, and a mock pipeline benchmark. It does not need a GPU, real model weights, or the full dataset.
+
+For a faster code-only check:
+
+```bash
+python scripts/smoke_check.py --skip-demos --skip-benchmark
+```
+
+If you want to run the steps manually:
+
+```bash
 python -m compileall src tests scripts
 python -m pytest -q
-ruff check .
+python -m ruff check .
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --output data/outputs --mock
+python scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
+python scripts/run_benchmark.py --mock --output reports/benchmark_results.json --markdown-report reports/benchmark_report_smoke.md
 ```
 
 If GNU Make is available:
@@ -445,12 +464,31 @@ flowchart LR
 
 ## Быстрый старт
 
+Рекомендуемый путь для быстрой локальной проверки:
+
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+python scripts/smoke_check.py
+```
+
+`smoke_check.py` запускает compile checks, unit-тесты, lint, mock image demo, synthetic video demo и mock pipeline benchmark. Для этого не нужны GPU, реальные веса модели или полный датасет.
+
+Для более быстрой проверки только кода:
+
+```bash
+python scripts/smoke_check.py --skip-demos --skip-benchmark
+```
+
+Если хочется запустить шаги вручную:
+
+```bash
 python -m compileall src tests scripts
 python -m pytest -q
-ruff check .
+python -m ruff check .
+python scripts/run_image_demo.py --image docs/assets/demo_input.jpg --output data/outputs --mock
+python scripts/run_video_demo.py --synthetic --output data/outputs/synthetic_annotated.gif --max-frames 30
+python scripts/run_benchmark.py --mock --output reports/benchmark_results.json --markdown-report reports/benchmark_report_smoke.md
 ```
 
 Если установлен GNU Make:

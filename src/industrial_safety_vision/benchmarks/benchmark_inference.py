@@ -61,6 +61,7 @@ def run_benchmark(
     benchmark_runs: int = 20,
     device: str = "cpu",
     output_path: str | Path = "reports/benchmark_results.json",
+    markdown_report_path: str | Path | None = "docs/benchmark_report.md",
     mock: bool = False,
 ) -> dict[str, Any]:
     frame = _load_benchmark_frame(image_path=image_path, input_size=input_size)
@@ -95,7 +96,7 @@ def run_benchmark(
                 **mock_metrics,
             }
         )
-        return _write_benchmark_outputs(results, output_path)
+        return _write_benchmark_outputs(results, output_path, markdown_report_path)
 
     if model_path is None:
         raise FileNotFoundError("A real model path is required unless --mock is used.")
@@ -134,7 +135,7 @@ def run_benchmark(
             }
         )
 
-    return _write_benchmark_outputs(results, output_path)
+    return _write_benchmark_outputs(results, output_path, markdown_report_path)
 
 
 def _percentile(values: list[float], percentile: int) -> float:
@@ -186,11 +187,16 @@ def _run_mock_pipeline(
     safety_engine.evaluate(tracks=tracks, detections=detections, frame_index=0)
 
 
-def _write_benchmark_outputs(results: dict[str, Any], output_path: str | Path) -> dict[str, Any]:
+def _write_benchmark_outputs(
+    results: dict[str, Any],
+    output_path: str | Path,
+    markdown_report_path: str | Path | None,
+) -> dict[str, Any]:
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
-    _write_markdown_report(results, "docs/benchmark_report.md")
+    if markdown_report_path is not None:
+        _write_markdown_report(results, markdown_report_path)
     return results
 
 
@@ -268,6 +274,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--output", default="reports/benchmark_results.json")
     parser.add_argument(
+        "--markdown-report",
+        default="docs/benchmark_report.md",
+        help="Markdown benchmark report path. Use an empty value to skip writing it.",
+    )
+    parser.add_argument(
         "--mock",
         action="store_true",
         help="Benchmark deterministic mock pipeline.",
@@ -286,6 +297,7 @@ def main() -> None:
         benchmark_runs=args.benchmark_runs,
         device=args.device,
         output_path=args.output,
+        markdown_report_path=args.markdown_report or None,
         mock=args.mock,
     )
     print(json.dumps(results, indent=2))

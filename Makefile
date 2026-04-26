@@ -10,11 +10,14 @@ IMAGE_SIZE ?= 320
 
 export INDUSTRIAL_SAFETY_MOCK_DETECTOR ?= $(MOCK)
 
-.PHONY: install test lint format download-data train evaluate validate-data generate-demo demo-image demo-video api docker-build docker-run export-onnx benchmark
+.PHONY: install smoke test lint format download-data train evaluate validate-data generate-demo demo-image demo-video api docker-build docker-run export-onnx benchmark
 
 install:
 	$(PYTHON) -m pip install --upgrade pip
 	$(PYTHON) -m pip install -e ".[dev]"
+
+smoke:
+	$(PYTHON) scripts/smoke_check.py
 
 test:
 	$(PYTHON) -m pytest -q
