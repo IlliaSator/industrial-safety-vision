@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
+
+import yaml
 
 from industrial_safety_vision.core import BoundingBox, Detection
 from industrial_safety_vision.tracking.track_types import Track
@@ -110,3 +113,13 @@ class SimpleIoUTracker:
             )
 
         return [track.to_track() for track in sorted(self._tracks.values(), key=lambda item: item.track_id)]
+
+
+def load_tracker_from_config(path: str | Path) -> SimpleIoUTracker:
+    payload = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    config = payload.get("tracker", {})
+    return SimpleIoUTracker(
+        iou_threshold=float(config.get("iou_threshold", 0.3)),
+        max_missed_frames=int(config.get("max_missed_frames", 10)),
+        track_class_names=set(config.get("class_names", ["person"])),
+    )

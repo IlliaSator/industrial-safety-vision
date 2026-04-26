@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 from industrial_safety_vision.core import Detection
 from industrial_safety_vision.safety.alert_types import Alert, AlertType, Severity
@@ -204,3 +208,53 @@ class SafetyRulesEngine:
                 metadata=metadata or {},
             )
         ]
+
+
+def load_safety_rules_config(path: str | Path) -> SafetyRulesConfig:
+    """Load safety-rule config from YAML."""
+
+    payload = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    rules = payload.get("rules", {})
+    return SafetyRulesConfig(
+        missing_helmet=_load_ppe_config(rules.get("missing_helmet", {}), default_overlap=0.02),
+        missing_vest=_load_ppe_config(rules.get("missing_vest", {}), default_overlap=0.08),
+        danger_zone=_load_danger_zone_config(rules.get("danger_zone", {})),
+        vehicle_proximity=_load_vehicle_config(rules.get("vehicle_proximity", {})),
+    )
+
+
+def _load_temporal_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "enabled": bool(payload.get("enabled", True)),
+        "consecutive_frames": int(payload.get("consecutive_frames", 3)),
+        "cooldown_frames": int(payload.get("cooldown_frames", 50)),
+    }
+
+
+def _load_ppe_config(payload: dict[str, Any], *, default_overlap: float) -> PPERuleConfig:
+    return PPERuleConfig(
+        **_load_temporal_fields(payload),
+        min_overlap_ratio=float(payload.get("min_overlap_ratio", default_overlap)),
+    )
+
+
+def _load_danger_zone_config(payload: dict[str, Any]) -> DangerZoneRuleConfig:
+    zones = [
+        DangerZone(
+            name=str(zone.get("name", "zone")),
+            polygon=[(float(x), float(y)) for x, y in zone.get("polygon", [])],
+        )
+        for zone in payload.get("zones", [])
+    ]
+    return DangerZoneRuleConfig(
+        **_load_temporal_fields(payload),
+        position=str(payload.get("position", "bottom_center")),
+        zones=zones,
+    )
+
+
+def _load_vehicle_config(payload: dict[str, Any]) -> VehicleProximityRuleConfig:
+    return VehicleProximityRuleConfig(
+        **_load_temporal_fields(payload),
+        distance_threshold_px=float(payload.get("distance_threshold_px", 120)),
+    )
