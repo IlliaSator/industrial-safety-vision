@@ -12,6 +12,20 @@ The project should not be used as an autonomous safety-critical control system, 
 
 Demo mode can run with generic YOLO checkpoints, but full safety mode expects a custom YOLO detector trained on classes such as `person`, `helmet`, `safety_vest`, `forklift`, and `vehicle`.
 
+## Data Expectations
+
+A production PPE model should be trained and evaluated on site-relevant camera footage or a carefully reviewed proxy dataset. The validation split should preserve camera/site separation where possible to avoid leakage and should include low-light, occlusion, dense-worker, and vehicle-interaction examples.
+
+## Evaluation Expectations
+
+Report detection metrics separately from downstream alert metrics:
+
+- mAP@0.5 and mAP@0.5:0.95 for object detection quality
+- per-class precision/recall for PPE and vehicle classes
+- alert precision/recall after temporal smoothing
+- latency/FPS on target hardware
+- false positive and false negative samples per camera
+
 ## Limitations
 
 - Accuracy depends heavily on camera placement, image quality, and dataset coverage.
@@ -30,6 +44,8 @@ This system should support safety teams, not replace them. It should not be used
 - Review alert false positives and false negatives with safety staff.
 - Monitor confidence drift, lighting changes, and camera movement.
 - Keep human review in the loop for safety decisions.
+- Version model checkpoints, configs, and safety-rule thresholds together.
+- Keep a rollback plan for model or rule updates.
 
 ## Failure Modes
 
@@ -41,3 +57,7 @@ This system should support safety teams, not replace them. It should not be used
 ## Monitoring Recommendations
 
 Track alert volume, per-camera false positive rate, detector confidence distribution, missing-label rates in reviewed samples, latency/FPS, and examples of suppressed alerts during cooldown.
+
+## Current Repository Status
+
+The committed assets demonstrate architecture and pipeline readiness. They do not claim trained PPE accuracy. The included benchmark example is a mock pipeline benchmark and should not be interpreted as neural-network performance.
