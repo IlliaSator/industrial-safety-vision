@@ -13,8 +13,8 @@ from industrial_safety_vision.core import Detection
 from industrial_safety_vision.inference.detector import YOLODetector
 from industrial_safety_vision.safety.alert_types import Alert
 from industrial_safety_vision.safety.rules import SafetyRulesEngine, load_safety_rules_config
-from industrial_safety_vision.tracking.tracker import SimpleIoUTracker, load_tracker_from_config
 from industrial_safety_vision.tracking.track_types import Track
+from industrial_safety_vision.tracking.tracker import SimpleIoUTracker, load_tracker_from_config
 from industrial_safety_vision.utils.video_io import build_video_writer, open_video_capture
 from industrial_safety_vision.visualization.draw import (
     draw_alerts,
@@ -112,7 +112,9 @@ def run_video_inference(
 
     detector = YOLODetector(model_path, confidence=confidence, iou=iou, device=device)
     tracker = load_tracker_from_config(tracking_config_path) if enable_tracking else None
-    safety_engine = SafetyRulesEngine(load_safety_rules_config(safety_config_path)) if enable_safety else None
+    safety_engine = (
+        SafetyRulesEngine(load_safety_rules_config(safety_config_path)) if enable_safety else None
+    )
     capture = open_video_capture(input_source)
     import cv2
 
@@ -146,7 +148,11 @@ def run_video_inference(
             detections = detector.predict_frame(frame)
             tracks = tracker.update(detections) if tracker is not None else []
             frame_alerts = (
-                safety_engine.evaluate(tracks=tracks, detections=detections, frame_index=frame_index)
+                safety_engine.evaluate(
+                    tracks=tracks,
+                    detections=detections,
+                    frame_index=frame_index,
+                )
                 if safety_engine is not None
                 else []
             )

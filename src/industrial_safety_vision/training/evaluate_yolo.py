@@ -29,10 +29,15 @@ def evaluate_from_config(
     try:
         from ultralytics import YOLO
     except ImportError as exc:
-        raise RuntimeError("Ultralytics is required for evaluation. Install project dependencies.") from exc
+        msg = "Ultralytics is required for evaluation. Install project dependencies."
+        raise RuntimeError(msg) from exc
 
     model = YOLO(checkpoint)
-    results = model.val(data=dataset_yaml, split=split, device=device or config.get("training", {}).get("device"))
+    results = model.val(
+        data=dataset_yaml,
+        split=split,
+        device=device or config.get("training", {}).get("device"),
+    )
     metrics = _extract_detection_metrics(results)
     output_path = Path("reports/evaluation_metrics.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)

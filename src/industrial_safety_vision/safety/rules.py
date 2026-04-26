@@ -42,9 +42,13 @@ class VehicleProximityRuleConfig(TemporalRuleConfig):
 @dataclass(frozen=True)
 class SafetyRulesConfig:
     missing_helmet: PPERuleConfig = field(default_factory=lambda: PPERuleConfig())
-    missing_vest: PPERuleConfig = field(default_factory=lambda: PPERuleConfig(min_overlap_ratio=0.08))
+    missing_vest: PPERuleConfig = field(
+        default_factory=lambda: PPERuleConfig(min_overlap_ratio=0.08)
+    )
     danger_zone: DangerZoneRuleConfig = field(default_factory=DangerZoneRuleConfig)
-    vehicle_proximity: VehicleProximityRuleConfig = field(default_factory=VehicleProximityRuleConfig)
+    vehicle_proximity: VehicleProximityRuleConfig = field(
+        default_factory=VehicleProximityRuleConfig
+    )
 
 
 class SafetyRulesEngine:

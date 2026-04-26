@@ -8,7 +8,11 @@ from industrial_safety_vision.inference.video_inference import run_video_inferen
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run video safety inference demo.")
     parser.add_argument("--input", required=True, help="Path to video file or webcam index.")
-    parser.add_argument("--output", default="data/outputs/annotated_demo.mp4", help="Output video path.")
+    parser.add_argument(
+        "--output",
+        default="data/outputs/annotated_demo.mp4",
+        help="Output video path.",
+    )
     parser.add_argument("--model", default="models/best.pt", help="YOLO model path or model name.")
     parser.add_argument("--conf", type=float, default=0.35, help="Confidence threshold.")
     parser.add_argument("--iou", type=float, default=0.45, help="NMS IoU threshold.")

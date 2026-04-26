@@ -29,7 +29,8 @@ def train_from_config(
     try:
         from ultralytics import YOLO
     except ImportError as exc:
-        raise RuntimeError("Ultralytics is required for training. Install project dependencies.") from exc
+        msg = "Ultralytics is required for training. Install project dependencies."
+        raise RuntimeError(msg) from exc
 
     model = YOLO(checkpoint)
     results = model.train(
@@ -41,7 +42,9 @@ def train_from_config(
         project=config.get("dataset", {}).get("project_dir", "runs/train"),
     )
     metrics = _extract_metrics(results)
-    metrics_path = Path(config.get("outputs", {}).get("metrics_path", "reports/training_metrics.json"))
+    metrics_path = Path(
+        config.get("outputs", {}).get("metrics_path", "reports/training_metrics.json")
+    )
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     return metrics

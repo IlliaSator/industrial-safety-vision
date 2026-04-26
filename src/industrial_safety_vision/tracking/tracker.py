@@ -68,7 +68,10 @@ class SimpleIoUTracker:
                     candidate_pairs.append((iou, track_id, detection_index))
 
         for _, track_id, detection_index in sorted(candidate_pairs, reverse=True):
-            if track_id not in unmatched_track_ids or detection_index not in unmatched_detection_indices:
+            if (
+                track_id not in unmatched_track_ids
+                or detection_index not in unmatched_detection_indices
+            ):
                 continue
             matches.append((track_id, detection_index))
             unmatched_track_ids.remove(track_id)
@@ -112,7 +115,10 @@ class SimpleIoUTracker:
                 confidence=detection.confidence,
             )
 
-        return [track.to_track() for track in sorted(self._tracks.values(), key=lambda item: item.track_id)]
+        return [
+            track.to_track()
+            for track in sorted(self._tracks.values(), key=lambda item: item.track_id)
+        ]
 
 
 def load_tracker_from_config(path: str | Path) -> SimpleIoUTracker:

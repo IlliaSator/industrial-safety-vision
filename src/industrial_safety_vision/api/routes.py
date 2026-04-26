@@ -6,7 +6,7 @@ import tempfile
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import numpy as np
 from fastapi import APIRouter, Depends, File, Request, UploadFile
@@ -82,20 +82,24 @@ def get_service(request: Request) -> InferenceService:
     return request.app.state.service
 
 
+ServiceDep = Annotated[InferenceService, Depends(get_service)]
+UploadFileDep = Annotated[UploadFile, File(...)]
+
+
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse()
 
 
 @router.get("/model/info", response_model=ModelInfoResponse)
-def model_info(service: InferenceService = Depends(get_service)) -> dict[str, Any]:
+def model_info(service: ServiceDep) -> dict[str, Any]:
     return service.model_info()
 
 
 @router.post("/predict/image", response_model=ImagePredictionResponse)
 async def predict_image(
-    file: UploadFile = File(...),
-    service: InferenceService = Depends(get_service),
+    file: UploadFileDep,
+    service: ServiceDep,
 ) -> dict[str, Any]:
     detections, latency_ms = service.predict_image_bytes(await file.read())
     return {
@@ -106,8 +110,8 @@ async def predict_image(
 
 @router.post("/predict/video", response_model=VideoPredictionResponse)
 async def predict_video(
-    file: UploadFile = File(...),
-    service: InferenceService = Depends(get_service),
+    file: UploadFileDep,
+    service: ServiceDep,
 ) -> dict[str, Any]:
     suffix = Path(file.filename or "video.mp4").suffix
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -126,12 +130,12 @@ async def predict_video(
 
 
 @router.get("/alerts", response_model=AlertResponse)
-def alerts(service: InferenceService = Depends(get_service)) -> dict[str, Any]:
+def alerts(service: ServiceDep) -> dict[str, Any]:
     return {"alerts": service.alerts[-100:]}
 
 
 @router.get("/metrics", response_model=MetricsResponse)
-def metrics(service: InferenceService = Depends(get_service)) -> dict[str, Any]:
+def metrics(service: ServiceDep) -> dict[str, Any]:
     return service.metrics()
 
 

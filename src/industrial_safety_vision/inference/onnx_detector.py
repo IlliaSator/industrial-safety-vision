@@ -28,7 +28,10 @@ class ONNXDetector:
         except ImportError as exc:
             raise RuntimeError("onnxruntime is required for ONNX inference.") from exc
 
-        self.session = ort.InferenceSession(str(self.model_path), providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession(
+            str(self.model_path),
+            providers=["CPUExecutionProvider"],
+        )
         self.input_name = self.session.get_inputs()[0].name
 
     def predict_frame(self, frame: np.ndarray) -> list[Detection]:

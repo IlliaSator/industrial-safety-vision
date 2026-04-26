@@ -77,7 +77,9 @@ def _validate_split(dataset_root: Path, split: str, class_count: int) -> dict[st
         try:
             labels = read_yolo_labels(label_path)
         except ValueError as exc:
-            issues.append({"type": "invalid_label_format", "path": str(label_path), "message": str(exc)})
+            issues.append(
+                {"type": "invalid_label_format", "path": str(label_path), "message": str(exc)}
+            )
             continue
         label_count += len(labels)
         for label in labels:
@@ -99,7 +101,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate a YOLO dataset.")
     parser.add_argument("--config", default="configs/train.yaml", help="Training config path.")
     parser.add_argument("--dataset-yaml", default=None, help="Override dataset YAML path.")
-    parser.add_argument("--report", default="reports/dataset_summary.json", help="Output report path.")
+    parser.add_argument(
+        "--report",
+        default="reports/dataset_summary.json",
+        help="Output report path.",
+    )
     return parser.parse_args()
 
 

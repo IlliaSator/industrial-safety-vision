@@ -6,7 +6,6 @@ from industrial_safety_vision.safety.rules import (
     PPERuleConfig,
     SafetyRulesConfig,
     SafetyRulesEngine,
-    TemporalRuleConfig,
     VehicleProximityRuleConfig,
 )
 from industrial_safety_vision.tracking.track_types import Track
@@ -22,7 +21,11 @@ def detection(class_name: str, box: BoundingBox) -> Detection:
 
 def engine_for_tests(**overrides: object) -> SafetyRulesEngine:
     config = SafetyRulesConfig(
-        missing_helmet=PPERuleConfig(consecutive_frames=2, cooldown_frames=5, min_overlap_ratio=0.01),
+        missing_helmet=PPERuleConfig(
+            consecutive_frames=2,
+            cooldown_frames=5,
+            min_overlap_ratio=0.01,
+        ),
         missing_vest=PPERuleConfig(consecutive_frames=2, cooldown_frames=5, min_overlap_ratio=0.01),
         danger_zone=DangerZoneRuleConfig(
             consecutive_frames=2,

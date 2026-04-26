@@ -2,7 +2,11 @@ import numpy as np
 
 from industrial_safety_vision.core import BoundingBox, Detection
 from industrial_safety_vision.inference.video_inference import process_frame_sequence
-from industrial_safety_vision.safety.rules import PPERuleConfig, SafetyRulesConfig, SafetyRulesEngine
+from industrial_safety_vision.safety.rules import (
+    PPERuleConfig,
+    SafetyRulesConfig,
+    SafetyRulesEngine,
+)
 from industrial_safety_vision.tracking.tracker import SimpleIoUTracker
 
 

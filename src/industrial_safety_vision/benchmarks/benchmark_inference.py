@@ -7,8 +7,9 @@ import json
 import platform
 import statistics
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 

@@ -26,7 +26,9 @@ def split_yolo_dataset(
     source_images = Path(source_images)
     source_labels = Path(source_labels)
     output_root = Path(output_root)
-    images = sorted(path for path in source_images.iterdir() if path.suffix.lower() in IMAGE_EXTENSIONS)
+    images = sorted(
+        path for path in source_images.iterdir() if path.suffix.lower() in IMAGE_EXTENSIONS
+    )
     random.Random(seed).shuffle(images)
 
     train_end = int(len(images) * train_ratio)
@@ -50,7 +52,9 @@ def split_yolo_dataset(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Split YOLO images and labels into train/val/test.")
+    parser = argparse.ArgumentParser(
+        description="Split YOLO images and labels into train/val/test."
+    )
     parser.add_argument("--images", required=True, help="Source image directory.")
     parser.add_argument("--labels", required=True, help="Source label directory.")
     parser.add_argument("--output", default="data/processed", help="Output YOLO dataset root.")
