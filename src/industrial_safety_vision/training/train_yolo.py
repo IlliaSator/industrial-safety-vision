@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from industrial_safety_vision.training.dataset_config import materialize_ultralytics_dataset_yaml
+
 
 def train_from_config(
     config_path: str | Path,
@@ -24,6 +26,10 @@ def train_from_config(
     dataset_yaml = dataset_path or config.get("dataset", {}).get("data_yaml")
     if not dataset_yaml or not Path(dataset_yaml).exists():
         raise FileNotFoundError(f"Dataset YAML not found: {dataset_yaml}")
+    ultralytics_dataset_yaml = materialize_ultralytics_dataset_yaml(
+        dataset_yaml,
+        output_path="reports/ultralytics_train_dataset.yaml",
+    )
 
     checkpoint = model_checkpoint or config.get("model", {}).get("checkpoint", "yolov8n.pt")
     try:
@@ -34,7 +40,7 @@ def train_from_config(
 
     model = YOLO(checkpoint)
     results = model.train(
-        data=dataset_yaml,
+        data=str(ultralytics_dataset_yaml),
         imgsz=image_size or config.get("model", {}).get("image_size", 640),
         epochs=epochs or config.get("training", {}).get("epochs", 50),
         batch=batch_size or config.get("training", {}).get("batch_size", 16),
